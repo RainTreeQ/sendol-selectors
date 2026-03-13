@@ -17,21 +17,28 @@ jobs:
       contains(github.event.pull_request.labels.*.name, 'high-confidence')
 
     steps:
-      - name: Auto-approve
+      - name: Verify only selectors.json changed
+        id: check_files
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.pulls.createReview({
+            const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.payload.pull_request.number,
-              event: 'APPROVE',
-              body: '🤖 Auto-approved: High confidence selector update (95%+)'
             });
+            const safeFiles = files.every((f) => f.filename === 'selectors.json');
+            core.setOutput('safe', safeFiles ? 'true' : 'false');
+            if (!safeFiles) {
+              console.log('Unsafe: PR modifies files other than selectors.json');
+              console.log('Changed files:', files.map((f) => f.filename).join(', '));
+            }
 
-      - name: Enable auto-merge
+      - name: Merge PR
+        if: steps.check_files.outputs.safe == 'true'
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.SELECTORS_REPO_PAT }}
           script: |
             await github.rest.pulls.merge({
               owner: context.repo.owner,
@@ -39,10 +46,11 @@ jobs:
               pull_number: context.payload.pull_request.number,
               merge_method: 'squash',
               commit_title: context.payload.pull_request.title,
-              commit_message: 'Auto-merged by GitHub Actions (high confidence)'
+              commit_message: 'Auto-merged by GitHub Actions (high confidence)',
             });
 
       - name: Comment on merge
+        if: steps.check_files.outputs.safe == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -50,5 +58,23 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: '✅ Auto-merged successfully. Users will receive the update within 12 hours.'
+              body: 'Auto-merged. Users will receive the update within 12 hours.',
+            });
+
+      - name: Reject unsafe PR
+        if: steps.check_files.outputs.safe != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: 'Auto-merge blocked: PR modifies files other than selectors.json. Manual review required.',
+            });
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              name: 'high-confidence',
             });
