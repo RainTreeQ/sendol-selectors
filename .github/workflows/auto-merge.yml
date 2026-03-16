@@ -13,8 +13,8 @@ jobs:
     name: Auto-merge if high confidence
     runs-on: ubuntu-latest
     if: |
-      github.event.pull_request.user.login == 'github-actions[bot]' || github.event.pull_request.user.login == 'RainTreeQ' &&
-      contains(github.event.pull_request.labels.*.name, 'high-confidence')
+      (github.event.pull_request.user.login == 'github-actions[bot]' || github.event.pull_request.user.login == 'RainTreeQ') &&
+contains(github.event.pull_request.labels.*.name, 'high-confidence')
 
     steps:
       - name: Verify only selectors.json changed
