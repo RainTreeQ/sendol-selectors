@@ -72,23 +72,8 @@
     ]
   },
   "deepseek": {
-    "mode": "override",
-    "findInput": [
-      "div#chat-input[contenteditable=\"true\"]",
-      "div[id*=\"chat-input\"][contenteditable=\"true\"]",
-      "textarea#chat-input",
-      "textarea[id*=\"chat-input\"]",
-      "div[contenteditable=\"true\"][data-placeholder]",
-      "textarea[placeholder*=\"Ask\"]",
-      "div[contenteditable=\"true\"][role=\"textbox\"]",
-      "textarea"
-    ],
-    "findSendBtn": [
-      "button[type=\"submit\"]",
-      "[aria-label*=\"send\" i]",
-      "[aria-label*=\"Send\"]",
-      "button[data-testid*=\"send\"]"
-    ]
+    "findInput": [],
+    "findSendBtn": []
   },
   "doubao": {
     "mode": "override",
